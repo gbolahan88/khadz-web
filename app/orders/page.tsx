@@ -2,6 +2,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import { useCart } from "@/context/cart-context";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Header } from "@/components/header";
@@ -29,23 +30,28 @@ type Order = {
   items: OrderItem[];
 };
 
-// ─────────────────────────────────────────────
-// Inner component — uses useSearchParams
-// ─────────────────────────────────────────────
-
 function OrdersContent() {
   const searchParams = useSearchParams();
   const newOrderId = searchParams.get("new");
   const { user, loading: authLoading } = useAuth();
+  const { clearCart } = useCart();
 
   const [orders, setOrders] = useState<Order[] | null>(null);
 
+  // 1. Clear the cart if we just returned from a successful checkout
+  useEffect(() => {
+    if (newOrderId) {
+      clearCart();
+    }
+  }, [newOrderId, clearCart]);
+
+  // 2. Fetch orders and poll for updates every 15 seconds
   useEffect(() => {
     if (authLoading || !user) return;
 
     let cancelled = false;
 
-    const load = async () => {
+    const fetchOrders = async () => {
       try {
         const token = await user.getIdToken(true);
         const res = await fetch("/api/orders/list", {
@@ -55,14 +61,16 @@ function OrdersContent() {
         if (!cancelled) setOrders(data.orders ?? []);
       } catch (err) {
         console.error(err);
-        if (!cancelled) setOrders([]);
+        if (!cancelled) setOrders((prev) => prev ?? []);
       }
     };
 
-    load();
+    fetchOrders();
+    const interval = setInterval(fetchOrders, 15000);
 
     return () => {
       cancelled = true;
+      clearInterval(interval);
     };
   }, [user, authLoading]);
 
@@ -72,8 +80,8 @@ function OrdersContent() {
     return (
       <>
         <Header />
-        <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-10 sm:px-6">
-          <div className="animate-pulse rounded-2xl bg-white p-6 text-sm text-neutral-500 shadow-sm">Loading your orders...</div>
+        <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-8">
+          <p className="text-neutral-500">Loading orders...</p>
         </main>
       </>
     );
@@ -83,13 +91,11 @@ function OrdersContent() {
     return (
       <>
         <Header />
-        <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-center px-4 py-16 text-center sm:px-6">
-          <span className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-50 text-3xl">📦</span>
-          <h1 className="text-2xl font-extrabold text-neutral-900">Your orders are one sign-in away</h1>
-          <p className="mb-6 mt-2 text-sm text-neutral-500">Log in to view your order history and delivery updates.</p>
+        <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-8 text-center">
+          <p className="text-neutral-600 mb-4">Log in to view your orders.</p>
           <Link
             href="/login?redirect=/orders"
-            className="inline-flex rounded-xl bg-orange-500 px-6 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
+            className="inline-block bg-orange-500 text-white font-semibold px-6 py-3 rounded-lg hover:bg-orange-600"
           >
             Log in
           </Link>
@@ -103,28 +109,24 @@ function OrdersContent() {
   return (
     <>
       <Header />
-      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
-        <div className="mb-8">
-          <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-orange-600">The good stuff</p>
-          <h1 className="text-3xl font-extrabold tracking-tight text-neutral-900">Your orders</h1>
-          <p className="mt-2 text-sm text-neutral-500">Check the status and details of your orders.</p>
-        </div>
+      <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-8">
+        <h1 className="text-2xl font-bold mb-6">Your Orders</h1>
 
         {newOrderId && (
-          <div role="status" className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+          <div className="bg-green-50 border border-green-200 text-green-800 rounded-lg p-4 mb-6">
             ✅ Order placed successfully! Order ID:{" "}
             <code>{newOrderId.slice(0, 8)}</code>
           </div>
         )}
 
         {list.length === 0 ? (
-          <div className="rounded-3xl border border-neutral-200 bg-white px-6 py-16 text-center shadow-sm">
-            <span className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-50 text-3xl">🍔</span>
-            <h2 className="text-xl font-extrabold text-neutral-900">Your first order is waiting</h2>
-            <p className="mb-6 mt-2 text-sm text-neutral-500">Your orders will show up here once you find a favorite.</p>
+          <div className="text-center py-16">
+            <p className="text-neutral-500 mb-4">
+              You haven&apos;t placed any orders yet.
+            </p>
             <Link
               href="/"
-              className="inline-flex rounded-xl bg-orange-500 px-6 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
+              className="inline-block bg-orange-500 text-white font-semibold px-6 py-3 rounded-lg hover:bg-orange-600"
             >
               Browse menu
             </Link>
@@ -134,9 +136,8 @@ function OrdersContent() {
             {list.map((order) => (
               <div
                 key={order.id}
-                className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6"
+                className="bg-white rounded-xl shadow-sm border border-neutral-200 p-5"
               >
-                {/* Header row */}
                 <div className="flex justify-between items-start mb-3">
                   <div>
                     <p className="text-sm text-neutral-500">
@@ -147,7 +148,7 @@ function OrdersContent() {
                     </p>
                   </div>
                   <span
-                    className={`rounded-full px-3 py-1.5 text-xs font-bold ${
+                    className={`text-xs font-semibold px-3 py-1 rounded-full ${
                       STATUS_BADGE_CLASSES[order.status as OrderStatus] ??
                       "bg-neutral-100 text-neutral-700"
                     }`}
@@ -156,7 +157,6 @@ function OrdersContent() {
                   </span>
                 </div>
 
-                {/* Timeline */}
                 {order.status !== "cancelled" && (
                   <div className="my-5">
                     <div className="flex items-center">
@@ -216,7 +216,7 @@ function OrdersContent() {
                   ))}
                 </ul>
 
-                <div className="flex justify-between border-t border-neutral-200 pt-3 font-extrabold text-neutral-900">
+                <div className="border-t pt-3 flex justify-between font-bold">
                   <span>Total</span>
                   <span>{formatCurrency(order.total)}</span>
                 </div>
@@ -229,18 +229,14 @@ function OrdersContent() {
   );
 }
 
-// ─────────────────────────────────────────────
-// Default export — wraps content in Suspense
-// ─────────────────────────────────────────────
-
 export default function OrdersPage() {
   return (
     <Suspense
       fallback={
         <>
           <Header />
-          <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-10 sm:px-6">
-            <div className="animate-pulse rounded-2xl bg-white p-6 text-sm text-neutral-500 shadow-sm">Loading your orders...</div>
+          <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-8">
+            <p className="text-neutral-500">Loading orders...</p>
           </main>
         </>
       }

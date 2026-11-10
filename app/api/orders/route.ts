@@ -1,3 +1,4 @@
+// app/api/orders/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { eq, inArray } from "drizzle-orm";
 import { adminAuth } from "@/lib/firebase-admin";
@@ -92,7 +93,44 @@ export async function POST(request: NextRequest) {
       return newOrder;
     });
 
-    return NextResponse.json({ orderId: order.id, total });
+    const userEmail = decoded.email;
+    if (!userEmail) {
+      return NextResponse.json({ error: "Email required for payment" }, { status: 400 });
+    }
+
+    const amountInKobo = Math.round(total * 100);
+
+    // Dynamically determine the base URL from the request headers
+    const host = request.headers.get("host") || "localhost:3000";
+    const protocol = request.headers.get("x-forwarded-proto") || "http";
+    const baseUrl = `${protocol}://${host}`;
+
+    const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: userEmail,
+        amount: amountInKobo,
+        reference: `order_${order.id}`, 
+        callback_url: `${baseUrl}/api/paystack/callback`,
+      }),
+    });
+
+    const paystackData = await paystackRes.json();
+
+    if (!paystackData.status) {
+      return NextResponse.json({ error: "Payment initialization failed" }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      orderId: order.id,
+      total,
+      authorizationUrl: paystackData.data.authorization_url,
+    });
+
   } catch (error) {
     console.error("Order creation failed:", error);
     return NextResponse.json(

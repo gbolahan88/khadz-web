@@ -73,8 +73,14 @@ export default function CheckoutPage() {
         return;
       }
 
-      clearCart();
-      router.push(`/orders?new=${data.orderId}`);
+      if (data.authorizationUrl) {
+        // Redirect to Paystack payment page
+        window.location.href = data.authorizationUrl;
+        return;
+      } else {
+        clearCart();
+        router.push(`/orders?new=${data.orderId}`);
+      }
     } catch (err) {
       console.error(err);
       setError("Something went wrong. Try again.");

@@ -2,7 +2,6 @@
 "use client";
 
 import Link from "next/link";
-import { Header } from "@/components/header";
 import { useAuth } from "@/context/auth-context";
 
 export default function AdminHome() {
@@ -11,7 +10,6 @@ export default function AdminHome() {
   if (loading || roleLoading) {
     return (
       <>
-        <Header />
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6">
           <div className="animate-pulse rounded-2xl bg-white p-6 text-sm text-neutral-500 shadow-sm">
             Loading your dashboard...
@@ -46,7 +44,6 @@ export default function AdminHome() {
 
   return (
     <>
-      <Header />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
         <div className="mb-8">
           <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-orange-600">
