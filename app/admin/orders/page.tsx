@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Header } from "@/components/header";
 import { useAuth } from "@/context/auth-context";
 import { formatCurrency } from "@/lib/format";
+import Link from "next/link";
 import {
   ORDER_STATUSES,
   STATUS_BADGE_CLASSES,
@@ -152,6 +153,13 @@ export default function AdminOrdersPage() {
     <>
       <Header />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
+        <Link
+          href="/admin"
+          className="mb-4 inline-block text-sm text-neutral-500 hover:text-orange-600"
+        >
+          ← Back to dashboard
+        </Link>
+
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-orange-600">

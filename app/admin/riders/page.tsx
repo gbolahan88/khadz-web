@@ -3,7 +3,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Header } from "@/components/header";
 import { useAuth } from "@/context/auth-context";
 
 type Rider = {
@@ -131,7 +130,6 @@ export default function AdminRidersPage() {
   if (loading || roleLoading || (isAdmin && riders === null)) {
     return (
       <>
-        <Header />
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6">
           <div className="animate-pulse rounded-2xl bg-white p-6 text-sm text-neutral-500 shadow-sm">
             Loading riders...
@@ -147,7 +145,6 @@ export default function AdminRidersPage() {
 
   return (
     <>
-      <Header />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
         <Link
           href="/admin"

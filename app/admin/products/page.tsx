@@ -4,7 +4,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Header } from "@/components/header";
 import { useAuth } from "@/context/auth-context";
 import { formatCurrency } from "@/lib/format";
 
@@ -190,7 +189,6 @@ export default function AdminProductsPage() {
   if (loading || roleLoading || (isAdmin && products === null)) {
     return (
       <>
-        <Header />
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6">
           <div className="animate-pulse rounded-2xl bg-white p-6 text-sm text-neutral-500 shadow-sm">
             Loading products...
@@ -206,7 +204,6 @@ export default function AdminProductsPage() {
 
   return (
     <>
-      <Header />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
         <Link
           href="/admin"
