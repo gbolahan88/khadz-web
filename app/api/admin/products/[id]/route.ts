@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/require-admin";
 import { db } from "@/lib/db";
 import { products } from "@/lib/db/schema";
+import { deleteBlobFile } from "@/lib/blob";
 
 export async function PATCH(
   request: NextRequest,
@@ -17,6 +18,17 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
+
+    // Fetch existing product to know the old image URL
+    const [existing] = await db
+      .select()
+      .from(products)
+      .where(eq(products.id, id))
+      .limit(1);
+
+    if (!existing) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
 
     const patch: Record<string, unknown> = {};
     if (body.name !== undefined) patch.name = String(body.name).trim();
@@ -49,6 +61,11 @@ export async function PATCH(
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
+    // If the image was changed, delete the old one from Vercel Blob
+    if (patch.image && patch.image !== existing.image) {
+      await deleteBlobFile(existing.image);
+    }
+
     return NextResponse.json({ product: updated });
   } catch (error) {
     console.error("Product update failed:", error);
@@ -75,6 +92,9 @@ export async function DELETE(
     if (!deleted) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
+
+    // Clean up the image file from Vercel Blob
+    await deleteBlobFile(deleted.image);
 
     return NextResponse.json({ success: true });
   } catch (error) {
