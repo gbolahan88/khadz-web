@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { useCart } from "@/context/cart-context";
 import { logout } from "@/lib/auth";
+import Image from "next/image";
 
 export function Header() {
   const { user, loading } = useAuth();
@@ -24,11 +25,15 @@ export function Header() {
     <header className="sticky top-0 z-20 border-b border-neutral-200/80 bg-white/90 backdrop-blur-xl">
       <div className="mx-auto flex h-[4.5rem] max-w-6xl items-center justify-between px-4">
         <Link href="/" className="inline-flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500 text-xl shadow-sm shadow-orange-500/25">
-            🍔
-          </span>
+          <Image
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-xl shadow-sm shadow-orange-500/25"
+            src="/Khadzlogo.png"
+            alt="Khadz Burger Logo"
+            width={70}
+            height={70}
+          />
           <span className="text-base font-extrabold tracking-tight text-neutral-900 sm:text-lg">
-            Khadz <span className="text-orange-600">Burger</span>
+            Khadz <span className="text-[#f8a609]">Burger</span>
           </span>
         </Link>
 
