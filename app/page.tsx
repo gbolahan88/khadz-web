@@ -1,11 +1,15 @@
 // app/page.tsx
+import { Suspense } from "react";
 import { getProducts } from "@/lib/products";
 import { Header } from "@/components/header";
 import { HomeClient } from "./home-client";
 
-export default async function Home() {
+async function HomeProducts() {
   const products = await getProducts();
+  return <HomeClient products={products} />;
+}
 
+export default function Home() {
   return (
     <>
       <Header />
@@ -28,7 +32,15 @@ export default async function Home() {
             </p>
           </div>
         </div>
-        <HomeClient products={products} />
+        <Suspense
+          fallback={
+            <div className="py-16 text-center text-sm text-neutral-500" aria-busy="true">
+              Loading the menu...
+            </div>
+          }
+        >
+          <HomeProducts />
+        </Suspense>
       </main>
     </>
   );

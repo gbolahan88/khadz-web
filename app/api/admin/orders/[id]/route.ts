@@ -7,8 +7,6 @@ import { orders, users } from "@/lib/db/schema";
 import { ORDER_STATUSES, STATUS_LABELS, type OrderStatus } from "@/lib/order-status";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -63,6 +61,9 @@ export async function PATCH(
       if (customer?.email) {
         const statusLabel = STATUS_LABELS[patch.status] || patch.status;
         
+        // Initialize Resend INSIDE the function so it doesn't break the build
+        const resend = new Resend(process.env.RESEND_API_KEY);
+
         resend.emails.send({
           from: "Khadz Burger <onboarding@resend.dev>",
           to: "onigbolahan88@gmail.com", // Change to customer.email once domain is verified
