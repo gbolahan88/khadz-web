@@ -110,7 +110,11 @@ function OrdersContent() {
     <>
       <Header />
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-8">
-        <h1 className="text-2xl font-bold mb-6">Your Orders</h1>
+        <div className="mb-8">
+          <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-orange-600">Transactions</p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-neutral-900">Your Orders</h1>
+          <p className="mt-2 text-sm text-neutral-500">View your order history and manage your transactions.</p>
+        </div>
 
         {newOrderId && (
           <div className="bg-green-50 border border-green-200 text-green-800 rounded-lg p-4 mb-6">
@@ -120,15 +124,15 @@ function OrdersContent() {
         )}
 
         {list.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-neutral-500 mb-4">
-              You haven&apos;t placed any orders yet.
-            </p>
+          <div className="rounded-3xl border border-neutral-200 bg-white px-6 py-16 text-center shadow-sm">
+            <span className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-50 text-3xl">🛍️</span>
+            <h2 className="text-xl font-extrabold text-neutral-900">You haven&apos;t placed any orders yet.</h2>
+            <p className="mb-6 mt-2 text-sm text-neutral-500">Browse the menu and Place your first order.</p>
             <Link
               href="/"
-              className="inline-block bg-orange-500 text-white font-semibold px-6 py-3 rounded-lg hover:bg-orange-600"
+              className="inline-flex items-center justify-center rounded-xl bg-orange-500 px-6 py-3 text-sm font-bold text-white shadow-sm shadow-orange-500/20 transition hover:bg-orange-600"
             >
-              Browse menu
+              Browse Menu
             </Link>
           </div>
         ) : (

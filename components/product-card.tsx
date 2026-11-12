@@ -23,7 +23,7 @@ export function ProductCard({ product }: { product: Product }) {
       </div>
       <div className="flex flex-1 flex-col items-start p-3 sm:p-4">
         <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.13em] text-orange-600">{product.category}</p>
-        <h3 className="mb-2 line-clamp-2 min-h-10 text-left text-sm font-bold leading-5 text-neutral-900">
+        <h3 className="mb-2 line-clamp-2 text-left text-sm font-bold leading-5 text-neutral-900">
           {product.name}
         </h3>
         {product.availabilityStatus && (
@@ -31,7 +31,7 @@ export function ProductCard({ product }: { product: Product }) {
             {product.availabilityStatus}
           </p>
         )}
-        <div className="mb-3 flex w-full items-center justify-between gap-1">
+        <div className="mb-3 flex flex-col w-full justify-between gap-1 md:flex-row md:items-center md:justify-between">
           <p className="text-sm font-extrabold text-neutral-900">
             {formatCurrency(product.price)}
           </p>

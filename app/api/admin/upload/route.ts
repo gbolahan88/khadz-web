@@ -17,7 +17,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // Basic validation (Vercel Blob also enforces limits)
     if (file.size > 4.5 * 1024 * 1024) {
       return NextResponse.json(
         { error: "File too large (max 4.5MB on server upload)" },
@@ -26,8 +25,9 @@ export async function POST(request: NextRequest) {
     }
 
     const blob = await put(file.name, file, {
-      access: "public", // Public so next/image can render it
-      addRandomSuffix: true, // Prevents filename collisions [citation:7]
+      access: "public",
+      addRandomSuffix: true,
+      token: process.env.BLOB_READ_WRITE_TOKEN,
     });
 
     return NextResponse.json({ url: blob.url, key: blob.pathname });

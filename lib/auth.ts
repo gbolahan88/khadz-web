@@ -6,6 +6,8 @@ import {
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup,
   type User,
 } from "firebase/auth";
 import { auth } from "./firebase";
@@ -69,6 +71,13 @@ export async function loginAsAdmin(email: string, password: string) {
  */
 export async function logout(): Promise<void> {
   await firebaseSignOut(auth);
+}
+
+/* Google Auth */
+export async function loginWithGoogle(): Promise<User> {
+  const provider = new GoogleAuthProvider();
+  const cred = await signInWithPopup(auth, provider);
+  return cred.user;
 }
 
 /**

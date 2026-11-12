@@ -100,7 +100,6 @@ export async function POST(request: NextRequest) {
 
     const amountInKobo = Math.round(total * 100);
 
-    // Dynamically determine the base URL from the request headers
     const host = request.headers.get("host") || "localhost:3000";
     const protocol = request.headers.get("x-forwarded-proto") || "http";
     const baseUrl = `${protocol}://${host}`;

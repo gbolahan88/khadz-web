@@ -7,6 +7,7 @@ import Link from "next/link";
 import { signup, getAuthErrorMessage } from "@/lib/auth";
 import { syncUserToPostgres } from "@/lib/sync-user";
 import { PasswordInput } from "@/components/password-input";
+import { loginWithGoogle } from "@/lib/auth";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -25,6 +26,23 @@ export default function SignupPage() {
       const user = await signup(email, password, name);
 
       await syncUserToPostgres(user); // Sync user data to Postgres after signup
+
+      router.push("/");
+      router.refresh();
+    } catch (err) {
+      setError(getAuthErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setError("");
+    setLoading(true);
+
+    try {
+      const user = await loginWithGoogle();
+      await syncUserToPostgres(user); // Sync user to Postgres after Google login
 
       router.push("/");
       router.refresh();
@@ -123,6 +141,16 @@ export default function SignupPage() {
             className="flex h-12 w-full items-center justify-center rounded-xl bg-orange-500 px-4 text-sm font-bold text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-orange-500/25 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? "Creating account..." : "Create account"}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={loading}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 text-sm font-bold text-neutral-900 shadow-sm transition hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-orange-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <span className="text-lg">🌐</span>
+            {loading ? "Creating account..." : "Create account with Google"}
           </button>
         </form>
 

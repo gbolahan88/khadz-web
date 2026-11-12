@@ -1,7 +1,7 @@
 // app/admin/products/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/context/auth-context";
@@ -48,6 +48,11 @@ export default function AdminProductsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
 
+  // NEW: Upload state
+  const [uploading, setUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const loadProducts = async () => {
     if (!user) return;
     try {
@@ -93,7 +98,9 @@ export default function AdminProductsPage() {
   const resetForm = () => {
     setForm(EMPTY_FORM);
     setEditing(null);
+    setPreviewUrl(null);
     setError("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const startEdit = (p: Product) => {
@@ -114,12 +121,62 @@ export default function AdminProductsPage() {
       description: p.description ?? "",
       availabilityStatus: p.availabilityStatus ?? "In Stock",
     });
+    setPreviewUrl(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // NEW: Handle file selection and upload to Vercel Blob
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    // Show local preview immediately
+    const localPreview = URL.createObjectURL(file);
+    setPreviewUrl(localPreview);
+    setUploading(true);
+    setError("");
+
+    try {
+      const token = await user.getIdToken(true);
+      const fd = new FormData();
+      fd.append("file", file);
+
+      const res = await fetch("/api/admin/upload", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error ?? "Upload failed");
+        setPreviewUrl(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        return;
+      }
+
+      // Save the Vercel Blob URL into the form
+      setForm((prev) => ({ ...prev, image: data.url }));
+    } catch (err) {
+      console.error(err);
+      setError("Upload failed");
+      setPreviewUrl(null);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+
+    if (!form.image) {
+      setError("Please upload an image first");
+      return;
+    }
+
     setError("");
     setSubmitting(true);
 
@@ -158,7 +215,8 @@ export default function AdminProductsPage() {
 
   const handleDelete = async (id: string) => {
     if (!user) return;
-    if (!confirm("Delete this product? Past orders will keep their records.")) return;
+    if (!confirm("Delete this product? Past orders will keep their records."))
+      return;
     setDeleting(id);
     setError("");
 
@@ -175,9 +233,7 @@ export default function AdminProductsPage() {
         return;
       }
 
-      setProducts((prev) =>
-        prev ? prev.filter((p) => p.id !== id) : prev,
-      );
+      setProducts((prev) => (prev ? prev.filter((p) => p.id !== id) : prev));
     } catch (err) {
       console.error(err);
       setError("Network error");
@@ -201,6 +257,7 @@ export default function AdminProductsPage() {
   if (!isAdmin) return null;
 
   const list = products ?? [];
+  const displayImage = previewUrl || form.image;
 
   return (
     <>
@@ -309,17 +366,56 @@ export default function AdminProductsPage() {
               </select>
             </div>
 
+            {/* NEW: Image upload */}
             <div className="sm:col-span-2">
               <label className="mb-1 block text-xs font-semibold text-neutral-600">
-                Image URL *
+                Product image *
               </label>
-              <input
-                required
-                value={form.image}
-                onChange={(e) => setForm({ ...form, image: e.target.value })}
-                placeholder="https://images.unsplash.com/photo-..."
-                className="h-11 w-full rounded-xl border border-neutral-200 px-3 text-sm outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10"
-              />
+
+              <div className="flex flex-col gap-3 sm:flex-row">
+                {/* Preview */}
+                <div className="relative h-32 w-32 flex-shrink-0 overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50">
+                  {displayImage ? (
+                    <Image
+                      src={displayImage}
+                      alt="Preview"
+                      fill
+                      className="object-cover"
+                      sizes="128px"
+                      unoptimized={!!previewUrl}
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-3xl text-neutral-300">
+                      🍔
+                    </div>
+                  )}
+                  {uploading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-xs font-semibold text-white">
+                      Uploading...
+                    </div>
+                  )}
+                </div>
+
+                {/* Controls */}
+                <div className="flex flex-1 flex-col gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleFileChange}
+                    disabled={uploading || submitting}
+                    className="block w-full text-sm text-neutral-600 file:mr-3 file:rounded-lg file:border-0 file:bg-orange-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-orange-600 hover:file:bg-orange-100 disabled:opacity-50"
+                  />
+                  <p className="text-xs text-neutral-500">
+                    JPG, PNG, or WebP · Max 4.5MB
+                  </p>
+                  {form.image && (
+                    <p className="truncate text-xs text-green-700">
+                      ✓ Uploaded: {form.image}
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="sm:col-span-2">
@@ -347,7 +443,7 @@ export default function AdminProductsPage() {
           <div className="mt-4 flex justify-end">
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || uploading}
               className="h-11 rounded-xl bg-orange-500 px-6 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:opacity-50"
             >
               {submitting

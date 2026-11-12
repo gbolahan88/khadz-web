@@ -2,7 +2,6 @@
 import { desc } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { products } from "@/lib/db/schema";
-import { cacheLife } from "next/cache";
 
 export type Product = {
   id: string;
@@ -18,8 +17,9 @@ export type Product = {
 };
 
 export async function getProducts(): Promise<Product[]> {
-  'use cache'
-  cacheLife('minutes')
+  // Removed 'use cache' and cacheLife to ensure fresh data from Neon
+  // and to prevent build-time database connection errors.
+  
   const rows = await db
     .select()
     .from(products)
