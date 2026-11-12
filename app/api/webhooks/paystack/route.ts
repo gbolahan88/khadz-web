@@ -1,7 +1,7 @@
 // app/api/webhooks/paystack/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { orders, users, orderItems, products } from "@/lib/db/schema";
 import { Resend } from "resend";
@@ -38,21 +38,21 @@ export async function POST(request: NextRequest) {
     const reference = payload.data.reference as string; // e.g., "order_uuid"
     const orderId = reference.replace("order_", "");
 
-    // 4. Update the order (Idempotent)
-    // We only update if the current status is "pending" to prevent overwriting
+    // 4. Update the order ONLY if it is still "pending"
+    // This prevents overwriting if the callback route got here first
     const [updatedOrder] = await db
       .update(orders)
       .set({ status: "preparing" })
-      .where(eq(orders.id, orderId))
+      .where(and(eq(orders.id, orderId), eq(orders.status, "pending")))
       .returning();
 
-    // If no order was updated, it might have already been processed by the callback route.
+    // If no order was updated, it means it was already processed by the callback route.
     if (!updatedOrder) {
       console.log(`Order ${orderId} already processed or not found.`);
       return NextResponse.json({ received: true });
     }
 
-    // 5. Send the Confirmation Email (Same logic as your callback route)
+    // 5. Send the Confirmation Email
     const [customer] = await db
       .select({ email: users.email, name: users.name })
       .from(users)
@@ -77,21 +77,26 @@ export async function POST(request: NextRequest) {
 
       const resend = new Resend(process.env.RESEND_API_KEY);
 
-      resend.emails.send({
-        from: "Khadz Burger <onboarding@resend.dev>",
-        to: "onigbolahan88@gmail.com", // Change to customer.email once domain is verified
-        subject: `Payment Received: Order #${orderId.slice(0, 8)}`,
-        html: `
-          <div style="font-family: sans-serif; padding: 20px;">
-            <h1 style="color: #ea580c;">Khadz Burger</h1>
-            <p>Hi ${customer.name || "there"},</p>
-            <p>We've received your payment for order <strong>#${orderId.slice(0, 8)}</strong>.</p>
-            <ul>${itemsHtml}</ul>
-            <p>Total: <strong>₦${Number(updatedOrder.total).toLocaleString()}</strong></p>
-            <p>We are preparing your food now!</p>
-          </div>
-        `,
-      }).catch((err) => console.error("Webhook email failed:", err));
+      try {
+        await resend.emails.send({
+          from: "Khadz Burger <onboarding@resend.dev>",
+          to: "onigbolahan88@gmail.com", // Change to customer.email once domain is verified
+          subject: `Payment Received: Order #${orderId.slice(0, 8)}`,
+          html: `
+            <div style="font-family: sans-serif; padding: 20px;">
+              <h1 style="color: #ea580c;">Khadz Burger</h1>
+              <p>Hi ${customer.name || "there"},</p>
+              <p>We've received your payment for order <strong>#${orderId.slice(0, 8)}</strong>.</p>
+              <ul>${itemsHtml}</ul>
+              <p>Total: <strong>₦${Number(updatedOrder.total).toLocaleString()}</strong></p>
+              <p>We are preparing your food now!</p>
+            </div>
+          `,
+        });
+        console.log("Webhook email sent successfully to:", customer.email);
+      } catch (err) {
+        console.error("Webhook email failed:", err);
+      }
     }
 
     // 6. Always respond with 200 quickly so Paystack doesn't retry

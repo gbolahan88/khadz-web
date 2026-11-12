@@ -64,7 +64,7 @@ export async function PATCH(
         // Initialize Resend INSIDE the function so it doesn't break the build
         const resend = new Resend(process.env.RESEND_API_KEY);
 
-        resend.emails.send({
+        await resend.emails.send({
           from: "Khadz Burger <onboarding@resend.dev>",
           to: "onigbolahan88@gmail.com", // Change to customer.email once domain is verified
           subject: `Order #${updated.id.slice(0, 8)} Update`,

@@ -43,7 +43,7 @@ function OrdersContent() {
     if (newOrderId) {
       clearCart();
     }
-  }, [newOrderId, clearCart]);
+  }, [newOrderId]);
 
   // 2. Fetch orders and poll for updates every 15 seconds
   useEffect(() => {

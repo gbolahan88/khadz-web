@@ -1,7 +1,7 @@
 // context/cart-context.tsx
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 
 export type CartItem = {
   id: string;
@@ -61,7 +61,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   // Actions
   // ─────────────────────────────────────────────
 
-  const addToCart = (burger: Omit<CartItem, "quantity">) => {
+  const addToCart = useCallback((burger: Omit<CartItem, "quantity">) => {
     setCart((prev) => {
       const existing = prev.find((item) => item.id === burger.id);
       if (existing) {
@@ -71,25 +71,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             : item,
         );
       }
-      // Explicit cast — TS now knows this satisfies CartItem
       const newItem: CartItem = { ...burger, quantity: 1 };
       return [...prev, newItem];
     });
-  };
+  }, []);
 
-  const removeFromCart = (id: string) => {
+  const removeFromCart = useCallback((id: string) => {
     setCart((prev) => prev.filter((item) => item.id !== id));
-  };
+  }, []);
 
-  const increaseQty = (id: string) => {
+  const increaseQty = useCallback((id: string) => {
     setCart((prev) =>
       prev.map((item) =>
         item.id === id ? { ...item, quantity: item.quantity + 1 } : item,
       ),
     );
-  };
+  }, []);
 
-  const decreaseQty = (id: string) => {
+  const decreaseQty = useCallback((id: string) => {
     setCart((prev) =>
       prev
         .map((item) =>
@@ -97,21 +96,26 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         )
         .filter((item) => item.quantity > 0),
     );
-  };
+  }, []);
 
-  const clearCart = () => setCart([]);
+  const clearCart = useCallback(() => setCart([]), []);
 
-  const getTotalItems = () =>
-    cart.reduce((total, item) => total + item.quantity, 0);
+  const getTotalItems = useCallback(
+    () => cart.reduce((total, item) => total + item.quantity, 0),
+    [cart],
+  );
 
-  const getTotalPrice = () =>
-    cart.reduce((total, item) => {
-      const price =
-        typeof item.price === "number"
-          ? item.price
-          : Number(item.price.toString().replace(/[^0-9.-]/g, "")) || 0;
-      return total + price * item.quantity;
-    }, 0);
+  const getTotalPrice = useCallback(
+    () =>
+      cart.reduce((total, item) => {
+        const price =
+          typeof item.price === "number"
+            ? item.price
+            : Number(item.price.toString().replace(/[^0-9.-]/g, "")) || 0;
+        return total + price * item.quantity;
+      }, 0),
+    [cart],
+  );
 
   return (
     <CartContext.Provider
