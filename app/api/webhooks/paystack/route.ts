@@ -6,8 +6,6 @@ import { db } from "@/lib/db";
 import { orders, users, orderItems, products } from "@/lib/db/schema";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function POST(request: NextRequest) {
   try {
     // 1. Get the raw body for signature verification
@@ -76,6 +74,8 @@ export async function POST(request: NextRequest) {
       const itemsHtml = items
         .map((i) => `<li>${i.quantity}x ${i.name} - ₦${Number(i.price).toLocaleString()}</li>`)
         .join("");
+
+      const resend = new Resend(process.env.RESEND_API_KEY);
 
       resend.emails.send({
         from: "Khadz Burger <onboarding@resend.dev>",
